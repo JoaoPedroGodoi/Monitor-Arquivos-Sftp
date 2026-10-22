@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitor de Arquivos - SFTP</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+[hidden] { display: none !important; }
+.sem-dados { text-align: center; color: var(--text-muted); padding: 24px; }
+</style>
+</head>
+<body>
+<header class="header">
+    <div class="titulo-area">
+        <h1 class="titulo">MONITOR DE ARQUIVOS</h1>
+        <span class="subtitulo" id="coleta">Aguardando dados do monitor…</span>
+    </div>
+</header>
+<main class="main-content">
+    <section id="aviso" class="alerta-banner" role="status" hidden></section>
+
+    <section class="cards" aria-label="Indicadores">
+        <div class="card"><h2>Arquivos nas pastas</h2><p id="total">—</p><small>Na última consulta</small></div>
+        <div class="card"><h2>Atenção</h2><p id="nAtencao">—</p><small id="limAtencao"></small></div>
+        <div class="card"><h2>Crítico</h2><p id="nCritico">—</p><small id="limCritico"></small></div>
+        <div class="card" id="cardGeral"><h2>Status geral</h2><p id="geral">—</p><small>Pior situação entre as pastas</small></div>
+    </section>
+
+    <h2 class="section-title">Status por Pasta</h2>
+    <section class="cards" id="pastas" aria-label="Status por Pasta"></section>
+
+    <h2 class="section-title">Arquivos nas pastas monitoradas</h2>
+    <section class="table-container">
+        <table>
+            <thead><tr><th>Arquivo</th><th>Pasta</th><th>Tempo na pasta</th><th>Status</th><th>Última modificação</th><th>E-mail enviado</th></tr></thead>
+            <tbody id="linhas"></tbody>
+        </table>
+    </section>
+
+    <h2 class="section-title">Últimos 10 arquivos que saíram das pastas</h2>
+    <section class="table-container">
+        <table>
+            <thead><tr><th>Arquivo</th><th>Pasta</th><th>Entrada</th><th>Saída</th><th>Tempo na pasta</th><th>E-mail enviado</th></tr></thead>
+            <tbody id="historico"></tbody>
+        </table>
+    </section>
+</main>
+<footer class="footer">
+    <p>Painel atualizado a cada 30 segundos · servidor consultado a cada <span id="intervalo">—</span> segundos</p>
+</footer>
+<script>
+'use strict';
+const ROTULO = { OK: 'OK', ATENCAO: 'ATENÇÃO', CRITICO: 'CRÍTICO' };
+const CLASSE = { OK: 'ok', ATENCAO: 'alerta', CRITICO: 'critico' };
+const $ = id => document.getElementById(id);
+function el(tag, classe, texto) {
+    const e = document.createElement(tag);
+    if (classe) e.className = classe;
+    if (texto !== undefined) e.textContent = texto;   // sempre texto: nome de arquivo nunca vira HTML
+    return e;
+}
+const doisDigitos = n => String(n).padStart(2, '0');
+function tempo(min) {
+    const m = Math.floor(min), d = Math.floor(m / 1440), h = Math.floor(m % 1440 / 60), r = m % 60;
+    return d ? `${d}d ${doisDigitos(h)}h ${doisDigitos(r)}m` : h ? `${doisDigitos(h)}h ${doisDigitos(r)}m` : `${doisDigitos(r)}m`;
+}
+const dataHora = iso => iso ? new Date(iso).toLocaleString('pt-BR') : '—';
+const pior = niveis => niveis.includes('CRITICO') ? 'CRITICO' : niveis.includes('ATENCAO') ? 'ATENCAO' : 'OK';
+function aviso(texto) { $('aviso').hidden = !texto; $('aviso').textContent = texto; }
+const emailEnviado = x => x.CriticoEnviado ? 'Crítico' : x.AtencaoEnviada ? 'Atenção' : '—';
+function linhaVazia(texto) {
+    const tr = el('tr'), td = el('td', 'sem-dados', texto);
+    td.colSpan = 6; tr.append(td);
+    return tr;
+}
+
+function cardPasta(p, arquivos) {
+    const nivel = p.Falha ? 'FALHA' : pior(arquivos.map(a => a.Nivel));
+    const card = el('div', 'card ' + (p.Falha ? 'critico' : CLASSE[nivel]));
+    card.append(el('h3', null, p.Pasta), el('p', null, p.Falha ? 'SEM ACESSO' : ROTULO[nivel]));
+    if (p.Falha) card.append(el('small', null, 'Última consulta OK: ' + dataHora(p.UltimaOkUtc)));
+    else if (!arquivos.length) card.append(el('small', null, 'Pasta vazia'));
+    else {
+        const barra = el('div', 'barra-status'), legenda = el('div', 'legenda-status');
+        barra.setAttribute('aria-hidden', 'true');   // a legenda em texto carrega a informacao
+        for (const n of ['CRITICO', 'ATENCAO', 'OK']) {
+            const q = arquivos.filter(a => a.Nivel === n).length;
+            if (!q) continue;
+            const seg = el('span', 'seg-' + CLASSE[n]); seg.style.flex = q + ' 1 0'; barra.append(seg);
+            const item = el('span', 'legenda-item'); item.append(el('span', 'legenda-cor seg-' + CLASSE[n]), q + ' ' + ROTULO[n].toLowerCase());
+            legenda.append(item);
+        }
+        card.append(barra, legenda);
+    }
+    return card;
+}
+
+async function atualizar() {
+    let d;
+    try {
+        const resp = await fetch('dados/dashboard.json', { cache: 'no-store' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        d = await resp.json();
+    } catch (e) {
+        aviso('Não foi possível ler os dados do monitor (' + e.message + '). Verifique se o Monitor-SFTP.ps1 está rodando.');
+        return;
+    }
+    const idadeMin = (Date.now() - new Date(d.GeradoUtc)) / 60000;
+    if (d.FalhasSeguidas > 0) aviso(`Falha ao consultar o servidor SFTP (${d.FalhasSeguidas} tentativa(s) seguida(s)); o motivo está no log do monitor. Os tempos das pastas sem acesso param na última consulta bem-sucedida.`);
+    else if (idadeMin > 3 * d.IntervaloSegundos / 60) aviso(`Dados desatualizados: o monitor não publica há ${Math.round(idadeMin)} minuto(s). Verifique se ele está rodando.`);
+    else aviso('');
+
+    $('coleta').textContent = `Última consulta: ${dataHora(d.GeradoUtc)}`;
+    $('intervalo').textContent = d.IntervaloSegundos;
+    $('limAtencao').textContent = `De ${d.AtencaoMinutos} a ${d.CriticoMinutos} minutos parados`;
+    $('limCritico').textContent = `${d.CriticoMinutos} minutos ou mais parados`;
+
+    const arquivos = d.Arquivos.slice().sort((a, b) => b.Minutos - a.Minutos);
+    const conta = n => arquivos.filter(a => a.Nivel === n).length;
+    $('total').textContent = arquivos.length;
+    $('nAtencao').textContent = conta('ATENCAO');
+    $('nCritico').textContent = conta('CRITICO');
+    const algumaFalha = d.Pastas.some(p => p.Falha);
+    const geral = pior(arquivos.map(a => a.Nivel));
+    $('cardGeral').className = 'card ' + (algumaFalha ? 'critico' : CLASSE[geral]);
+    $('geral').textContent = algumaFalha ? 'SEM ACESSO' : ROTULO[geral];
+
+    $('pastas').replaceChildren(...d.Pastas.map(p => cardPasta(p, arquivos.filter(a => a.Pasta === p.Pasta))));
+
+    const linhas = arquivos.map(a => {
+        const tr = el('tr', CLASSE[a.Nivel]);
+        tr.append(el('td', null, a.Nome), el('td', null, a.Pasta), el('td', null, tempo(a.Minutos)),
+            el('td', 'status-cell', ROTULO[a.Nivel]), el('td', null, dataHora(a.Modificado)), el('td', null, emailEnviado(a)));
+        return tr;
+    });
+    $('linhas').replaceChildren(...(linhas.length ? linhas : [linhaVazia('Nenhum arquivo nas pastas monitoradas.')]));
+
+    const saidas = (d.Historico || []).map(h => {
+        const tr = el('tr');
+        tr.append(el('td', null, h.Nome), el('td', null, h.Pasta), el('td', null, dataHora(h.EntradaUtc)),
+            el('td', null, dataHora(h.SaidaUtc)), el('td', null, tempo(h.Minutos)), el('td', null, emailEnviado(h)));
+        return tr;
+    });
+    $('historico').replaceChildren(...(saidas.length ? saidas : [linhaVazia('Nenhum arquivo saiu das pastas ainda.')]));
+}
+atualizar();
+setInterval(atualizar, 30000);
+</script>
+</body>
+</html>

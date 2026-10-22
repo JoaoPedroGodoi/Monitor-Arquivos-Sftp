@@ -1,0 +1,9 @@
+02_publicaveis/
+desktop.ini
+
+# Configuracao real e dados de execucao: nunca versionar
+**/config.json
+**/dados/
+**/segredos/
+**/winscp/
+**/simulado/

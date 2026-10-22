@@ -1,0 +1,29 @@
+{
+  "Fonte": "WinSCP",
+  "PastasRemotas": ["/CAMINHO/NO/SERVIDOR/A"],
+
+  "IntervaloSegundos": 60,
+  "AtencaoMinutos": 10,
+  "CriticoMinutos": 15,
+  "ToleranciaSegundos": 30,
+  "MaxLacunaMinutos": 3,
+  "FalhasParaAlertar": 3,
+  "RetencaoLogsDias": 90,
+
+  "Sftp": {
+    "Host": "PREENCHER",
+    "Porta": 22,
+    "Usuario": "PREENCHER",
+    "Fingerprint": "PREENCHER",
+    "WinScpDll": "winscp\\WinSCPnet.dll",
+    "WinScpExe": "winscp\\WinSCP.exe"
+  },
+
+  "Email": {
+    "SmtpHost": "PREENCHER",
+    "SmtpPorta": 25,
+    "Tls": true,
+    "Remetente": "PREENCHER@empresa.com.br",
+    "Destinatarios": ["PREENCHER@empresa.com.br"]
+  }
+}

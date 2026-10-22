@@ -1,0 +1,373 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap');
+
+/* Identidade visual: Montserrat, navy #0E2041 e laranja #F79D1B (principais), azul #003B77
+   e amarelo #FDC20F (secundárias). Tons neutros são o navy com opacidade (camadas de 10-100%). */
+:root {
+    --font-primary: 'Montserrat', 'Segoe UI', Arial, sans-serif;
+    --color-brand-navy: #0E2041;
+    --color-brand-orange: #F79D1B;
+    --color-brand-gold: #FDC20F;
+    --bg-base: #F3F4F6; /* navy a 5% sobre branco - repetido no SVG da onda do .header */
+    --bg-card: #ffffff;
+    --text-primary: #0E2041;
+    --text-secondary: #404041;
+    --text-muted: #7A8496;
+    --border-color: rgba(14, 32, 65, 0.12);
+    --border-subtle: rgba(14, 32, 65, 0.06);
+    /* Nomes usados nos estilos inline gerados pelo dashboard.py (selects "Mostrar:") */
+    --card-bg: var(--bg-card);
+    --text-color: var(--text-primary);
+
+    /* Cores Temáticas de Status (HSL para melhor controle visual) */
+    --color-ok-bg: hsl(142, 70%, 97%);
+    --color-ok-border: hsl(142, 76%, 45%);
+    --color-ok-text: hsl(142, 76%, 20%);
+
+    --color-alerta-bg: hsl(45, 100%, 96%);
+    --color-alerta-border: var(--color-brand-gold);
+    --color-alerta-text: hsl(35, 90%, 25%);
+
+    --color-critico-bg: hsl(0, 100%, 97%);
+    --color-critico-border: hsl(0, 84%, 60%);
+    --color-critico-text: hsl(0, 75%, 25%);
+
+    --color-brand-primary: #003B77;
+    /* Preenchimentos sólidos da barra de status (alto contraste; o amarelo é o da marca) */
+    --solid-ok: #1E7B4F;
+    --solid-critico: #B42318;
+
+    --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+    --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --border-radius-lg: 12px;
+    --border-radius-md: 8px;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-primary);
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    padding: 30px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.main-content {
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.header {
+    max-width: 1400px;
+    margin: 0 auto 30px auto;
+    position: relative;
+    /* O gradiente para 8px antes da base (ali só existe a onda): evita um fio de navy
+       na última linha de pixels quando a altura do cabeçalho é fracionária. */
+    background: linear-gradient(135deg, var(--color-brand-navy) 0%, var(--color-brand-primary) 100%) top / 100% calc(100% - 8px) no-repeat;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 24px 32px 48px;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    overflow: hidden;
+}
+
+/* "Onda institucional": lâmina laranja + onda na cor do fundo da página (#F3F4F6,
+   igual a --bg-base - o SVG não enxerga variáveis CSS) recortando a base do cabeçalho. */
+.header::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 32px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 40' preserveAspectRatio='none'%3E%3Cpath fill='%23F79D1B' d='M0 34V16C240-4 480 30 720 16S1200 2 1440 8V34Z'/%3E%3Cpath fill='%23F3F4F6' d='M0 40V24C240 4 480 38 720 24S1200 10 1440 16V40Z'/%3E%3C/svg%3E") no-repeat bottom / 100% 100%;
+    pointer-events: none;
+}
+
+
+.titulo-area {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.titulo-area .titulo {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #ffffff;
+    margin: 0;
+}
+
+.titulo-area .subtitulo {
+    font-size: 13px;
+    font-weight: 400;
+    opacity: 0.85;
+    letter-spacing: 0.5px;
+    color: #FAFAFA;
+}
+
+.section-title {
+    margin: 40px auto 16px auto;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+    max-width: 1400px;
+    border-left: 4px solid var(--color-brand-orange);
+    padding-left: 12px;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+/* Estilo do Card individual */
+.card {
+    background: var(--bg-card);
+    padding: 22px;
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    border-left: 5px solid var(--color-brand-primary);
+    transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.card h2,
+.card h3 {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+}
+
+.card p {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.card small {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Distribuição por status nos cards de pasta: barra proporcional + legenda com a
+   contagem. Cores sólidas próprias (o card inteiro herda a cor do pior status). */
+.barra-status {
+    display: flex;
+    height: 10px;
+    gap: 2px;
+    margin-top: 4px;
+}
+
+.barra-status span {
+    min-width: 4px; /* 1 arquivo entre muitos ainda aparece */
+}
+
+.legenda-status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-top: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.legenda-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legenda-cor {
+    width: 8px;
+    height: 8px;
+}
+
+.seg-ok { background-color: var(--solid-ok); }
+.seg-alerta { background-color: var(--color-brand-gold); }
+.seg-critico { background-color: var(--solid-critico); }
+
+.card.ok {
+    background-color: var(--color-ok-bg);
+    border-left-color: var(--color-ok-border);
+}
+
+.card.ok p,
+.card.ok h2,
+.card.ok h3,
+.card.ok small {
+    color: var(--color-ok-text);
+}
+
+.card.alerta {
+    background-color: var(--color-alerta-bg);
+    border-left-color: var(--color-alerta-border);
+}
+
+.card.alerta p,
+.card.alerta h2,
+.card.alerta h3,
+.card.alerta small {
+    color: var(--color-alerta-text);
+}
+
+.card.critico {
+    background-color: var(--color-critico-bg);
+    border-left-color: var(--color-critico-border);
+    animation: pulse 2s infinite alternate;
+}
+
+.card.critico p,
+.card.critico h2,
+.card.critico h3,
+.card.critico small {
+    color: var(--color-critico-text);
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: var(--shadow-sm);
+    }
+
+    100% {
+        box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+    }
+}
+
+.table-container {
+    background: var(--bg-card);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 35px;
+    border: 1px solid var(--border-color);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+th {
+    background-color: var(--color-brand-navy);
+    color: #FAFAFA;
+    padding: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+td {
+    padding: 14px 16px;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-primary);
+}
+
+
+tr.ok {
+    background-color: rgba(240, 253, 250, 0.5);
+}
+
+tr.ok td.status-cell {
+    color: var(--color-ok-border);
+    font-weight: 600;
+}
+
+tr.alerta {
+    background-color: rgba(254, 252, 232, 0.6);
+}
+
+tr.alerta td.status-cell {
+    color: var(--color-alerta-text);
+    font-weight: 600;
+}
+
+tr.critico {
+    background-color: rgba(254, 242, 242, 0.7);
+}
+
+tr.critico td.status-cell {
+    color: var(--color-critico-border);
+    font-weight: 600;
+}
+
+tr:hover {
+    background-color: rgba(14, 32, 65, 0.05) !important;
+    transition: background-color var(--transition-fast);
+}
+
+.alerta-banner {
+    max-width: 1400px;
+    margin: 0 auto 30px auto;
+    background-color: var(--color-critico-bg);
+    border: 1px solid var(--color-critico-border);
+    border-left: 5px solid var(--color-critico-border);
+    color: var(--color-critico-text);
+    padding: 14px 20px;
+    border-radius: var(--border-radius-md);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 16px;
+    font-size: 14px;
+}
+
+.alerta-banner small {
+    margin-left: auto;
+    opacity: 0.75;
+    color: var(--color-critico-text);
+}
+
+.footer {
+    max-width: 1400px;
+    margin: 40px auto 20px auto;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-align: center;
+    border-top: 1px solid var(--border-color);
+    padding-top: 20px;
+}
+
+@media (max-width: 900px) {
+    .header {
+        flex-direction: column;
+        text-align: center;
+        padding: 24px;
+    }
+
+
+    body {
+        padding: 15px;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+}
